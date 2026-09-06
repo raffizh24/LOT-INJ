@@ -119,13 +119,6 @@ require 'function_history.php';
                                 <button class="btn btn-sm btn-outline w-100" disabled><?= $data['total_assy'] ?></button>
                             </div>
 
-                            <!-- Monthly Bon Kuning -->
-                            <div class="d-flex justify-content-center mt-1">
-                                <button class="btn btn-sm btn-outline w-100 me-1" disabled>Voucher</button>
-                                <button class="btn btn-sm btn-outline w-100 me-1" disabled><?= $data['qty_bk_injection'] ?></button>
-                                <button class="btn btn-sm btn-outline w-100" disabled><?= $data['qty_bk_assy'] ?></button>
-                            </div>
-
                             <!-- End Stock -->
                             <div class="d-flex justify-content-center mt-1">
                                 <button class="btn btn-sm btn-outline w-100 me-1" disabled>End Stock</button>

@@ -113,20 +113,6 @@ if ($loadData) {
     $injectionData = mysqli_query($conn, getTrans('INJECTION', $currentDate));
     $assyData      = mysqli_query($conn, getTrans('ASSY', $currentDate));
 
-    // VOUCHER
-    $voucherResult = mysqli_query($conn, "
-        SELECT part_code, qty_bk_injection, qty_bk_assy
-        FROM history_ls
-        WHERE DATE_FORMAT(date_prod, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
-    ");
-
-    while ($v = mysqli_fetch_assoc($voucherResult)) {
-        if (isset($komponen[$v['part_code']])) {
-            $komponen[$v['part_code']]['qty_bk_injection'] = (int)$v['qty_bk_injection'];
-            $komponen[$v['part_code']]['qty_bk_assy']      = (int)$v['qty_bk_assy'];
-        }
-    }
-
     // INJECTION LOOP (FIX)
     while ($tr = mysqli_fetch_assoc($injectionData)) {
         if (!isset($komponen[$tr['part_code']])) continue;
@@ -220,82 +206,6 @@ if (isset($_POST['btn_finish'])) {
         exit;
     } catch (Exception $e) {
         // ROLLBACK
-        mysqli_rollback($conn);
-
-        echo "<script>
-            alert('ERROR: {$e->getMessage()}');
-            history.back();
-        </script>";
-        exit;
-    }
-}
-
-// HANDLE BLUE & YELLOW VOUCHER
-if (isset($_POST['btn_voucher'])) {
-
-    $partCode = $_POST['part_code'] ?? '';
-    $area     = $_POST['area'] ?? '';
-    $qty      = isset($_POST['qty']) ? (int)$_POST['qty'] : 0;
-
-    // VALIDASI INPUT
-    if ($partCode === '' || $qty <= 0) {
-        echo "<script>
-            alert('Input tidak valid');
-            history.back();
-        </script>";
-        exit;
-    }
-
-    // START TRANSACTION
-    mysqli_begin_transaction($conn);
-
-    try {
-        // CEK HISTORY_LS TABLE FOR MONTHLY IF EXISTS UPDATE ELSE INSERT
-        $historyCheck = mysqli_query($conn, "
-            SELECT * FROM history_ls
-            WHERE part_code = '$partCode'
-            AND DATE_FORMAT(date_prod, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
-        ");
-
-        // TABLE HISTORY_LS UPDATE / INSERT
-        if (mysqli_num_rows($historyCheck) > 0) {
-            if (!mysqli_query($conn, "
-                UPDATE history_ls
-                SET qty_bk_{$area} = qty_bk_{$area} + $qty
-                WHERE part_code = '$partCode'
-                AND DATE_FORMAT(date_prod, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
-            ")) {
-                throw new Exception('Gagal update history_ls');
-            }
-        } else {
-            if (!mysqli_query($conn, "
-                INSERT INTO history_ls
-                (date_prod, part_code, qty_bk_{$area})
-                VALUES
-                (CURDATE(), '$partCode', $qty)
-            ")) {
-                throw new Exception('Gagal insert history_ls');
-            }
-        }
-
-        // UPDATE TABLE PART STOCK
-        if (!mysqli_query($conn, "
-                UPDATE part
-                SET qty_injection = qty_injection - $qty
-                WHERE part_code = '$partCode'
-            ")) {
-            throw new Exception('Gagal update part stock untuk assy');
-        }
-
-        // COMMIT
-        mysqli_commit($conn);
-
-        echo "<script>
-            alert('Voucher recorded successfully');
-            location.href='index.php';
-        </script>";
-        exit;
-    } catch (Exception $e) {
         mysqli_rollback($conn);
 
         echo "<script>
